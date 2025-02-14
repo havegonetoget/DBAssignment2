@@ -47,60 +47,41 @@ public class main {
     }
 
     public static void display_report() {
-        int skipped_lines=0;
-        for(int i = 1; i <= 10; i++) {
-            //if(!database.readRecord(i).isEmpty()) {
-                System.out.print((i-skipped_lines)+". ");
-                System.out.print(database.readRecord(i).toString()+"\n");
-                System.out.println();
-            // } else {
-            //     skipped_lines++;
-            // }
-        }
+       for (int i = 1; i <= 10; i++ ){
+        
+       }
+        
     }
 
     public static void delete_Record() {   //finished
-        if(database.openFlag) {
-            
+        if (database.openFlag) {
             System.out.print("Which record would you like to delete >> ");
-                 int record_num = scanner.nextInt();
-                 scanner.nextLine();
-
-            database.deleteRecord(filename, database.readRecord(record_num), record_num); //takes desired record and uses record obj to change
-
-            
-            database.readRecord(record_num).empty = true;
-
-            System.out.println(database.readRecord(record_num).isEmpty()); 
-            
-            
-        //     Boolean decision_made = false;
-
-
-        //     while(!decision_made) {
-        //     System.out.print("Which record would you like to delete >> ");
-        //     int record_num = scanner.nextInt();
-        //     scanner.nextLine();
-            
-        //     System.out.println(database.readRecord(record_num).toString());
-        //     System.out.print("Is this the record you'd like to delete? (Y/N)\n(Press Enter to quit) >> ");
-        //     String choice = scanner.nextLine();
-
-        //         if(choice.equalsIgnoreCase("Y")) {
-        //             //Call Delete Record in DataBase
-        //             decision_made = true;
-        //             database.readRecord(record_num).makeEmpty();
-        //             System.out.println(database.readRecord(record_num).isEmpty());
-
-                    
-        //         } else if (choice.equalsIgnoreCase("N")) {
-        //             System.out.println("Please try again...");
-        //         } else if (choice.isEmpty()) {
-        //             break;
-        //         }
-        //     }
-        // } else {
-        //     System.out.println("Database not open, please open one and try again");
+            int record_num = scanner.nextInt();
+            scanner.nextLine(); // to consume the newline character left by nextInt
+    
+            // Validate if record_num is in range
+            if (record_num <= database.NUM_RECORDS && record_num > 0) {
+                // Delete the record
+                Record recordToDelete = database.readRecord(record_num);
+                database.deleteRecord(filename, recordToDelete, record_num);
+    
+                // Mark the record as empty
+                recordToDelete.makeEmpty();
+    
+                // You can print the status of the record after deletion
+                System.out.println("Record deleted: " + recordToDelete.isEmpty());
+    
+                // Recalculate and update NUM_RECORDS after deletion
+                database.NUM_RECORDS--; // Decrease the number of records
+                try{
+                database.writeConfigFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } // Save the updated config file
+    
+            } else {
+                System.out.println("Not in range!\n");
+            }
         }
     }
 
@@ -119,18 +100,33 @@ public class main {
             System.out.println("8) Delete record");
             System.out.println("9) Quit");
             System.out.print("    >> ");
-            int choice;
+            int choice = 0;
             
         
-        do {
             
-            choice = scanner.nextInt();
-            scanner.nextLine();
+            
+    
+            // Loop until user enters a valid integer
+            while (true) {
+                String input = scanner.nextLine().trim();
 
-            if(choice > 9 || choice < 1 )
-                System.out.print("Not a valid option please try again! >> ");
-        
-        } while (choice > 9 || choice < 1);
+                if (input.isEmpty()) {
+                    System.out.println("Nothing entered, please try again!");
+                    continue; 
+                }
+            try{
+                choice = Integer.parseInt(input);
+
+                if (choice > 0 && choice <= 9){
+                    break;
+                }
+                else {
+                    System.out.println("Please enter choice from 1-9!");
+                }
+            } catch (NumberFormatException e){
+                System.out.println("That is not an integer, please try again!");
+            }
+        }
 
 
        

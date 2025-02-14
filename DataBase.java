@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -10,12 +11,13 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 import javax.swing.JSpinner.NumberEditor;
 
 public class DataBase {
     public long NUM_RECORDS;
-    public int RECORD_SIZE = 138;
+    public int RECORD_SIZE;   //removed value placed into config
     public String FILE_NAME;
 
     private RandomAccessFile Dinout;
@@ -40,23 +42,86 @@ public class DataBase {
     public void print_size() {
         try {
             System.out.println("File length: " + this.Dinout.length());
-            System.out.println("Number of Records: " + (this.Dinout.length() / RECORD_SIZE));
+            System.out.println("Number of Records: " + NUM_RECORDS);   //changed from (this.Dinout.length() / RECORD_SIZE)
         } catch (IOException e) {
             System.out.println("Couldn't get length of file");
         }
     }
 
-    public void open(String filename) {
-        // Set the number of records
-        this.num_records = (int) NUM_RECORDS;
-        FILE_NAME = filename;
+    public void writeConfigFile() throws IOException {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME + ".config"))) {
+            writer.println("# Database Configuration File for " + FILE_NAME);
+            writer.println("# This file contains metadata and settings for the database system.");
+            writer.println();
+            writer.println("NUM_RECORDS=" + NUM_RECORDS);
+            writer.println("RECORD_SIZE=" + RECORD_SIZE);
+            writer.println("FILE_NAME=" + FILE_NAME);
+            writer.println("DATABASE_VERSION=1.0");
+            writer.println("DATABASE_INITIALIZED=" + openFlag);
+        }
+    }
+
+    public void readConfigFile() throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME + ".config"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("NUM_RECORDS=")) {
+                    NUM_RECORDS = Long.parseLong(line.split("=")[1]);
+                    this.num_records = (int)Long.parseLong(line.split("=")[1]);
+                } else if (line.startsWith("RECORD_SIZE=")) {
+                    RECORD_SIZE = Integer.parseInt(line.split("=")[1]);
+                } else if (line.startsWith("FILE_NAME=")) {
+                    FILE_NAME = line.split("=")[1];
+                } else if (line.startsWith("DATABASE_VERSION=")) {
+                    // Process version info (optional)
+                } else if (line.startsWith("DATABASE_INITIALIZED=")) {
+                    openFlag = Boolean.parseBoolean(line.split("=")[1]);
+                }
+            }
+        }
+    }
     
+    public void loadConfig(String configFilePath) {  //added to load the congif file
+        Properties config = new Properties();
+        
+        try (FileInputStream configFile = new FileInputStream(configFilePath)) {
+            config.load(configFile);
+            
+            // Load RECORD_SIZE from the config file
+            String recordSizeStr = config.getProperty("RECORD_SIZE");
+            if (recordSizeStr != null) {
+                this.RECORD_SIZE = Integer.parseInt(recordSizeStr);  // Convert to integer
+            }
+            
+            // Optionally, load NUM_RECORDS and FILE_NAME from the config
+            String numRecordsStr = config.getProperty("NUM_RECORDS");
+            if (numRecordsStr != null) {
+                this.NUM_RECORDS = Long.parseLong(numRecordsStr);  // Convert to long
+                this.num_records = (int)Long.parseLong(numRecordsStr);
+            }
+            
+            String fileNameStr = config.getProperty("FILE_NAME");
+            if (fileNameStr != null) {
+                this.FILE_NAME = fileNameStr;
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading config file: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid number format in config file.");
+        }
+    }
+
+    public void open(String filename) {
+       
         // Open file in read/write mode
         try {
+
+            FILE_NAME = filename;
+            readConfigFile();
           this.Dinout = new RandomAccessFile(filename+".data", "rw");
           this.openFlag = true;
           System.out.println("Opening [" + filename + ".data] ...\n");
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
           System.out.println("Could not open file\n");
           e.printStackTrace();
         } 
@@ -76,15 +141,15 @@ public class DataBase {
     public void createDB(String filename) throws IOException {
         RandomAccessFile Din = new RandomAccessFile(filename+".csv", "r");
         RandomAccessFile dataFile = new RandomAccessFile(filename+".data","rw"); 
-        RandomAccessFile configFile = new RandomAccessFile(filename+".config", "rw");
         String line;
+        loadConfig(filename + ".config");
         while ((line = Din.readLine()) != null) {
             String[] attribute = line.split(",");
             writeRecord(dataFile, attribute[0], attribute[1], attribute[2], attribute[3]);
         }
         try {
             NUM_RECORDS = dataFile.length() / RECORD_SIZE;
-            this.num_records = (int) NUM_RECORDS;
+            writeConfigFile();
         } catch (IOException e) {
             System.out.println(e);
         }
@@ -103,6 +168,13 @@ public class DataBase {
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        }
+
+        try {
+            NUM_RECORDS = file.length() / RECORD_SIZE; 
+            writeConfigFile();  
+        } catch (IOException e){
+            System.err.println("Error calc num records. ");
         }
     }
 
@@ -167,8 +239,8 @@ public class DataBase {
 
     public void deleteRecord(String filename, Record record, int record_num) {   
        
-        //overwriteRecord(record_num, record.college_ID, "", "", ""); 
-        record.makeEmpty(); //this could possibly cause errors becasue overwrite does the same as this hypotheticall
+        overwriteRecord(record_num, record.college_ID, "", "", ""); 
+        //record.makeEmpty(); //this could possibly cause errors becasue overwrite does the same as this hypotheticall
                             //maybe this consider for data not sure
     }
     
@@ -227,5 +299,7 @@ public class DataBase {
         } catch (FileNotFoundException e) {
             e.getMessage();
         }
+
+      
     }
 }
