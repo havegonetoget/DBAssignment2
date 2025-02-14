@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "main",
+            "request": "launch",
+            "mainClass": "main",
+            "projectName": "hw2_java"
+        },
+        {
+            "type": "java",
+            "name": "TestDB",
+            "request": "launch",
+            "mainClass": "TestDB",
+            "projectName": "hw2_java"
+        },
+        {
+            "name": "Project 2",
+            "type": "cppdbg",
+            "request": "launch",
+            "cwd": "/home/username/pf2/proj2/",
+            "program": "/home/username/pf2/proj2/lex",
+            "args": [
+                "debug"
+            ],
+            "externalConsole": false
+        }
+    ]
+}

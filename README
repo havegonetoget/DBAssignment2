@@ -1,0 +1,6 @@
+Example code to read and write fixed length records (random access file)
+Author:  Susan Gauch, Byron Denham
+
+To run the example on turing:
+make
+java TestDB
